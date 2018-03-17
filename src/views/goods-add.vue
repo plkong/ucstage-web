@@ -175,7 +175,18 @@ export default {
           images: self.form.images
         })
         .then(function(response) {
-          console.log(response);
+          self.$message({
+              showClose: true,
+              message: "添加成功",
+              type: "success"
+            });
+            self.form.title = "";
+            self.form.detail = "";
+            self.form.size = "";
+            self.form.color = "";
+            self.form.star = "";
+            self.form.images = "";
+            self.fileList2 = [];
         })
         .catch(function(error) {
           console.log(error);

@@ -12,7 +12,7 @@
     </el-select>
   </el-form-item>
   <el-form-item label="类别标题">
-    <el-input v-model="form.label"></el-input>
+    <el-input v-model="form.label" @blur="onBlur()"></el-input>
   </el-form-item>
   <el-form-item label="类别描述">
     <el-input type="textarea" v-model="form.remark"></el-input>
@@ -54,6 +54,7 @@ export default {
     };
   },
   methods: {
+    onBlur() {},
     selectPCategory(params) {
       if (params) {
         this.$axios
@@ -70,18 +71,39 @@ export default {
     onSubmit(formName) {
       let pId = formName.pId;
       let label = formName.label;
-      let remark = formName.remark;
-      this.$axios.post('api/category/add', {
+      if (pId === null || pId ==="" || label === null || label === "") {
+        this.$alert("名称或类别不能为空", "提示", {
+          confirmButtonText: "确定",
+          callback: action => {
+          }
+        });
+      } else {
+        let remark = formName.remark;
+        let self = this;
+        this.$axios
+          .post("api/category/add", {
             pId: pId,
             label: label,
             remark: remark
           })
-          .then(function (response) {
-            console.log(response);
+          .then(function(response) {
+            self.$message({
+              showClose: true,
+              message: "添加成功",
+              type: "success"
+            });
+            formName.label = "";
+            formName.remark = "";
           })
-          .catch(function (error) {
-            console.log(error);
+          .catch(function(error) {
+            self.$message({
+              showClose: true,
+              message: "添加失败",
+              type: "error"
+            });
           });
+      }
+
       console.log("submit!");
     },
     handleRemove(file, fileList) {
