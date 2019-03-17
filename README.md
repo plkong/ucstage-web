@@ -18,3 +18,12 @@ The key fingerprint is:
 到这一步，你会发现 ~/.ssh/id_rsa.pub 文件已经生成了。
 
 将SSH key添加到Github账户中
+
+# npm setting
+npm config set registry http://registry.npm.taobao.org
+
+# install dependency
+npm install
+
+# develop
+npm run dev

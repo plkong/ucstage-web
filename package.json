@@ -2,7 +2,7 @@
     "name": "element-vue-admin",
     "version": "1.0.0",
     "description": "A admin template base on element 2.x.x",
-    "author": "Tony <luozhuming@gmail.com>",
+    "author": "",
     "private": true,
     "scripts": {
         "dev": "node build/dev-server.js",
