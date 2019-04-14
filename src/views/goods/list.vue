@@ -1,6 +1,13 @@
 <template>
   <div class="app-container">
-
+    <div class="filter-container">
+      <el-select v-model="listQuery.oneLevel" :placeholder="$t('category.oneLevel')" clearable @change="selectCategory" style="width: 150px" class="filter-item">
+        <el-option v-for="item in datas" :key="item.id" :label="item.label" :value="item.id" />
+      </el-select>
+      <el-select v-model="listQuery.twoLevel" :placeholder="$t('category.twoLevel')" clearable @change="getList" class="filter-item" style="width: 180px">
+        <el-option v-for="item in subDatas.children" :key="item.id" :label="item.label" :value="item.id" />
+      </el-select>
+    </div>
     <el-table v-loading="listLoading" :data="list" border fit highlight-current-row height="650" style="width: 100%">
       <el-table-column align="center" label="ID" width="80">
         <template slot-scope="scope">
@@ -83,25 +90,40 @@ export default {
       dialogVisible: false,
       listQuery: {
         page: 1,
-        limit: 20
+        limit: 20,
+        oneLevel: '',
+        tewLevel: ''
       },
+      datas: [],
+      subDatas: [],
       deleteGoodsId: null
     }
   },
   created() {
     this.getList()
+    this.initData()
   },
   methods: {
     getList() {
-      console.log("query..........")
       this.listLoading = true
-      let cur = this;
+      let cur = this
+      let id = 0
+      if (this.listQuery.oneLevel != '' && this.listQuery.oneLevel != undefined) {
+        id = this.listQuery.oneLevel
+      } 
+
+      if (this.listQuery.twoLevel != '' && this.listQuery.twoLevel != undefined) {
+        id = this.listQuery.twoLevel
+      } 
+      console.log("id=" + this.listQuery.oneLevel)
+      console.log("id=" + this.listQuery.twoLevel)
+      console.log("id=" + id)
       this.$axios
         .get('/api/goods/query', {
           params: {
             pageNum: cur.listQuery.page,
             pageSize: cur.listQuery.limit,
-            categoryId: 0
+            categoryId: id
           }
         })
         .then(response => {
@@ -114,6 +136,22 @@ export default {
           console.log(response);
           cur.listLoading = false
         })
+    },
+    initData() {
+      let cur = this;
+      this.$axios
+        .get("api/category/categorys/0")
+        .then(response => {
+          cur.datas = response.data;
+          console.log("initdata")
+        })
+        .catch(function(response) {
+          console.log(response);
+        })
+    },
+    selectCategory() {
+      this.subDatas = this.datas.filter(data => data.id === this.listQuery.oneLevel)[0]
+      console.log(this.subDatas)
     },
     handleSizeChange(val) {
       this.listQuery.limit = val
