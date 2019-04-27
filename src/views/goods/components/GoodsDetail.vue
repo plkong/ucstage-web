@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-form ref="postForm" :model="postForm" :rules="rules" class="form-container">
       <div class="filter-container">
-        <el-select v-model="listQuery.oneLevel" :placeholder="$t('category.oneLevel')" clearable @change="selectCategory" style="width: 150px" class="filter-item">
+        <el-select v-model="listQuery.oneLevel" :placeholder="$t('category.oneLevel')" clearable style="width: 150px" class="filter-item" @change="selectCategory">
           <el-option v-for="item in datas" :key="item.id" :label="item.label" :value="item.id" />
         </el-select>
         <el-select v-model="listQuery.twoLevel" :placeholder="$t('category.twoLevel')" clearable class="filter-item" style="width: 180px">
@@ -11,11 +11,11 @@
       </div>
 
       <div class="createPost-main-container">
-        <el-form-item prop="title" style="margin-bottom: 40px;" label-width="80px" :label="$t('goods.title')">
+        <el-form-item prop="title" style="margin-bottom: 40px;" label-width="100px" :label="$t('goods.title')">
           <el-input v-model="postForm.title" :rows="1" type="textarea" class="article-textarea" autosize :placeholder="$t('goods.inputTitle')" />
         </el-form-item>
 
-        <el-form-item prop="stars" style="margin-bottom: 40px;" label-width="80px" :label="$t('goods.rates')">
+        <el-form-item prop="stars" style="margin-bottom: 40px;" label-width="100px" :label="$t('goods.rates')">
           <el-rate
             v-model="postForm.stars"
             :max="5"
@@ -27,13 +27,13 @@
         </el-form-item>
 
         <el-form-item prop="detail" style="margin-bottom: 30px;">
-          <Tinymce ref="editor" v-model="postForm.detail" :height="400" />
+          <Tinymce ref="editor" v-model="postForm.detail" :height="200" />
         </el-form-item>
         <el-form-item>
           <el-upload
+            ref="upload"
             class=""
             name="productImg"
-            ref="upload"
             action="img/upload/img"
             multiple
             :data="upLoadData"
@@ -42,7 +42,8 @@
             :auto-upload="false"
             :file-list="fileList2"
             :on-success="uploadImgSuccess"
-            list-type="picture-card">
+            list-type="picture-card"
+          >
             <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
             <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器</el-button>
             <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
@@ -94,8 +95,10 @@ export default {
       postForm: Object.assign({}, defaultForm),
       loading: false,
       rules: {
-        title: [{ validator: validateRequire }],
-        detail: [{ validator: validateRequire }],
+        title: [{ required: true, message: '请输入标题', trigger: 'blur'
+        }, { min: 1, max: 200, message: '长度在 1 到 5 个字符'
+        }],
+        detail: [{ required: true, message: '请填写产品详情', trigger: 'blur' }]
       },
       listQuery: {
         oneLevel: '',
@@ -131,27 +134,26 @@ export default {
     // 编辑数据前，需要先获取产品种类信息
     async fetchData(id) {
       this.datas = await this.loadData()
-      const idurl = "/api/goods/" + id
-      let self = this
+      const idurl = '/api/goods/' + id
+      const self = this
       this.$axios
         .get(idurl)
         .then(function(response) {
           self.postForm = response.data
-          let images = response.data.images;
+          const images = response.data.images
           images.split(';').forEach(image => {
-            let index = image.lastIndexOf('/')
-            let name = image.substring(index + 1)
-            //[{name: 'food.jpg', url: 'upload-dir/2/SQ-U14-0.3-3M/SQ-U14-0.3-3m.jpg'}],
-            let imageObj = {}
+            const index = image.lastIndexOf('/')
+            const name = image.substring(index + 1)
+            // [{name: 'food.jpg', url: 'upload-dir/2/SQ-U14-0.3-3M/SQ-U14-0.3-3m.jpg'}],
+            const imageObj = {}
             imageObj.name = name
             imageObj.url = image
             self.fileList2.push(imageObj)
           })
 
-
-          let category = self.postForm.category
+          const category = self.postForm.category
           self.listQuery.oneLevel = category.pId
-          console.log("images--------------:" + self.postForm.images)
+          console.log('images--------------:' + self.postForm.images)
           self.subDatas = self.datas.filter(data => data.id === category.pId)[0]
           self.listQuery.twoLevel = category.id
         })
@@ -165,17 +167,18 @@ export default {
       this.$store.dispatch('updateVisitedView', route)
     },
     submitForm() {
-      let form = this.postForm
-      let self = this;
+      const form = this.postForm
+      const self = this
       const id = this.$route.params && this.$route.params.id
+      const isEdit = this.isEdit
       this.$refs.postForm.validate(valid => {
         let apiURL = 'api/goods/add'
-        if (this.isEdit) { 
+        if (isEdit) {
           apiURL = 'api/goods/update'
         }
         if (valid) {
           this.loading = true
-          console.log(form.title);
+          console.log(form.title)
           this.$axios.post(apiURL, {
             id: id,
             category: {
@@ -183,32 +186,37 @@ export default {
             },
             title: form.title,
             detail: form.detail,
-            size: form.size,
-            color: form.color,
             stars: form.stars,
             images: form.images
           })
-          .then(function(response) {
-              self.$notify({
-                title: '成功',
-                message: '添加产品成功',
-                type: 'success',
-                duration: 2000
-              })
-              form.title = ""
-              form.detail = ""
-              form.size = ""
-              form.color = ""
-              form.star = ""
-              form.images = ""
-              form.fileList2 = []
-          })
-          .catch(function(error) {
-            console.log(error)
-          })
-          
-          self.postForm.status = 'published'
-          self.loading = false
+            .then(function(response) {
+              if (isEdit) {
+                self.$notify({
+                  title: '成功',
+                  message: '编辑产品成功',
+                  type: 'success',
+                  duration: 2000
+                })
+              } else {
+                self.$notify({
+                  title: '成功',
+                  message: '添加产品成功',
+                  type: 'success',
+                  duration: 2000
+                })
+                form.title = ''
+                self.$refs.editor.setContent('')
+                self.$refs.upload.clearFiles()
+                form.detail = ''
+                form.images = ''
+              }
+              self.postForm.status = 'published'
+              self.loading = false
+            })
+            .catch(function(error) {
+              self.loading = false
+              console.log(error)
+            })
         } else {
           console.log('error submit!!')
           return false
@@ -216,7 +224,7 @@ export default {
       })
     },
     cancelForm() {
-      this.$router.push({path:'/goods/list'});
+      this.$router.push({ path: '/goods/list' })
     },
     getRemoteUserList(query) {
       userSearch(query).then(response => {
@@ -225,31 +233,31 @@ export default {
       })
     },
     initData() {
-      let cur = this;
+      const cur = this
       this.$axios
-        .get("api/category/categorys/0")
+        .get('api/category/categorys/0')
         .then(response => {
-          cur.datas = response.data;
-          console.log("initdata")
+          cur.datas = response.data
+          console.log('initdata')
         })
         .catch(function(response) {
-          console.log(response);
+          console.log(response)
         })
     },
     // 同步加载数据的方法
     loadData() {
-      let cur = this;
+      const cur = this
       return new Promise((resolve, reject) => {
         cur.$axios
-          .get("api/category/categorys/0")
+          .get('api/category/categorys/0')
           .then(response => {
-            cur.datas = response.data;
+            cur.datas = response.data
             resolve(response.data)
-            console.log("loaddata")
+            console.log('loaddata')
           })
           .catch(function(response) {
             reject(response)
-            console.log(response);
+            console.log(response)
           })
       })
     },
@@ -258,7 +266,17 @@ export default {
       console.log(this.subDatas)
     },
     handleRemove(file, fileList) {
-      console.log(file, fileList)
+      const curImgs = this.postForm.images.split(';')
+      let imgs = ''
+      fileList.forEach(element => {
+        console.log(element.name)
+        curImgs.forEach(img => {
+          if (img.indexOf(element.name) >= 0) {
+            imgs += ';' + img
+          }
+        })
+      })
+      this.postForm.images = imgs.substring(1, imgs.length)
     },
     handlePreview(file) {
       this.dialogImageUrl = file.url
@@ -268,17 +286,17 @@ export default {
     submitUpload() {
       this.upLoadData.title = this.postForm.title
       this.upLoadData.categoryId = this.listQuery.twoLevel
-  
+
       console.log(this.upLoadData.title)
       console.log(this.upLoadData.categoryId)
       this.$refs.upload.submit()
     },
     uploadImgSuccess(response, file, fileList) {
-      let uploadImages = this.postForm.images
+      const uploadImages = this.postForm.images
       if (uploadImages == undefined || uploadImages.length == 0) {
         this.postForm.images = response
-      } else if (uploadImages.indexOf(response) < 0){
-        this.postForm.images += ";" + response
+      } else if (uploadImages.indexOf(response) < 0) {
+        this.postForm.images += ';' + response
       }
 
       console.log('images:' + this.postForm.images)
